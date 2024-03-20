@@ -16,6 +16,17 @@ namespace CFGPP {
 
         void close();
 
+        bool contains(const std::string& str_name);
+
+        bool contains(const std::string& ns_name, const std::string& str_name);
+
+        bool contains_ns(const std::string& ns_name);
+
+        std::string read(const std::string& str_name);
+
+        std::string read(const std::string& ns_name,
+                         const std::string& str_name);
+
     private:
     };
 } // namespace CFGPP
