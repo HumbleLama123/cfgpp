@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <vector>
@@ -45,13 +46,17 @@ inline std::string get_str_value(const std::string& str)
                       str.find_last_of('"') - str.find_first_of('"') - 1);
 }
 
-inline std::string get_str_name(const std::string& str)
+inline std::string get_str_name(std::string str)
 {
+    str = str_trim_whitespaces(str);
+
     return str.substr(0, str.find_first_of('='));
 }
 
-inline std::string get_ns_name(const std::string& ns)
+inline std::string get_ns_name(std::string ns)
 {
+    ns = str_trim_whitespaces(ns);
+
     return ns.substr(1, ns.size() - 2);
 }
 
