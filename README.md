@@ -1,3 +1,4 @@
+[![C/C++ CI](https://github.com/HumbleLama123/cfgpp/actions/workflows/c-cpp.yml/badge.svg)](https://github.com/HumbleLama123/cfgpp/actions/workflows/c-cpp.yml)
 # CFGPP
 ```cpp
 // main.cpp
