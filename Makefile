@@ -1,4 +1,4 @@
-CXX = clang++
+CXX = g++
 CXXFLAGS = -std=c++23 -Wall -Wextra -O2
 SRC = main.cpp cfgpp.cpp
 OBJ = $(SRC:.cpp=.o)
