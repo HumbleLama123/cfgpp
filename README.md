@@ -16,15 +16,15 @@ int main()
 
     f.write_file("settings.cfg");
 
-    for (size_t i = 0; i < 10000000; i++)
+    for (size_t i = 0; i < 100000000; i++)
         f.read("string");
 
-    CFGPP_LOG("Reading string \"string\" 1000000 times is done.");
+    CFGPP_LOG("Reading string \"string\" 100000000 times is done.");
 
-    for (size_t i = 0; i < 1000000; i++)
+    for (size_t i = 0; i < 100000000; i++)
         f.read("namespace", "string");
 
-    CFGPP_LOG("Reading string \"string\" in namespace \"namespace\" 1000000 "
+    CFGPP_LOG("Reading string \"string\" in namespace \"namespace\" 100000000 "
               "times is done.");
 
     return 0;

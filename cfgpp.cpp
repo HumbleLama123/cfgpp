@@ -74,43 +74,40 @@ CFGPP::manipulator::manipulator(const std::string& cfg_file_path)
 
 void CFGPP::manipulator::open(const std::string& cfg_file_path)
 {
-    if (std::filesystem::exists(cfg_file_path)) {
-        const_cast<std::string&>(this->cfg_file_path) = cfg_file_path;
+    if (!std::filesystem::exists(cfg_file_path))
+        system(std::string("touch " + cfg_file_path).c_str());
 
-        std::ifstream f(cfg_file_path);
+    const_cast<std::string&>(this->cfg_file_path) = cfg_file_path;
 
-        std::string line;
+    std::ifstream f(cfg_file_path);
 
-        bool ns = false;
+    std::string line;
 
-        size_t current_ns = -1;
+    bool ns = false;
 
-        while (std::getline(f, line)) {
-            if (line_is_ns(line)) {
-                if (!ns)
-                    ns = true;
+    size_t current_ns = -1;
 
-                current_ns++;
+    while (std::getline(f, line)) {
+        if (line_is_ns(line)) {
+            if (!ns)
+                ns = true;
 
-                content.ns.push_back(
-                    std::make_pair(get_ns_name(line), CFGPP_STRS_CONTENT()));
+            current_ns++;
 
-                continue;
-            }
+            content.ns.push_back(
+                std::make_pair(get_ns_name(line), CFGPP_STRS_CONTENT()));
 
-            if (line_is_str(line) && !ns)
-                content.strs.push_back(
-                    std::make_pair(get_str_name(line), get_str_value(line)));
-            else if (ns) {
-                if (line_is_str(line))
-                    content.ns[current_ns].second.push_back(std::make_pair(
-                        get_str_name(line), get_str_value(line)));
-            }
+            continue;
         }
-    } else {
-        CFGPP_LOG("[CFGPP][ERROR]: The specified file could not be found.");
 
-        exit(EXIT_FAILURE);
+        if (line_is_str(line) && !ns)
+            content.strs.push_back(
+                std::make_pair(get_str_name(line), get_str_value(line)));
+        else if (ns) {
+            if (line_is_str(line))
+                content.ns[current_ns].second.push_back(
+                    std::make_pair(get_str_name(line), get_str_value(line)));
+        }
     }
 }
 

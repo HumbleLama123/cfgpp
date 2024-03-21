@@ -1,18 +1,26 @@
-#include <iostream>
-
 #include "cfgpp.hpp"
-
-using namespace std;
 
 int main()
 {
-    CFGPP::manipulator f("settings.cfg");
+    CFGPP::manipulator f;
 
-    if (f.contains("str1"))
-        cout << f.read("str1") << endl;
+    f.add_str("string", "value");
 
-    if (f.contains_ns("ns1") && f.contains("ns1", "str1"))
-        cout << f.read("ns1", "str1") << endl;
+    f.add_ns("namespace");
+    f.add_ns_str("namespace", "a", "value");
+
+    f.write_file("settings.cfg");
+
+    for (size_t i = 0; i < 100000000; i++)
+        f.read("string");
+
+    CFGPP_LOG("Reading string \"string\" 100000000 times is done.");
+
+    for (size_t i = 0; i < 100000000; i++)
+        f.read("namespace", "string");
+
+    CFGPP_LOG("Reading string \"string\" in namespace \"namespace\" 100000000 "
+              "times is done.");
 
     return 0;
 }
