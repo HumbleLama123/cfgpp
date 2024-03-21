@@ -3,32 +3,30 @@
 ```cpp
 // main.cpp
 
-#include <iostream>
-
 #include "cfgpp.hpp"
-
-using namespace std;
 
 int main()
 {
-    CFGPP::manipulator f("settings.cfg");
+    CFGPP::manipulator f;
 
-    if (f.contains("str1"))
-        cout << f.read("str1") << endl;
+    f.add_str("string", "value");
 
-    if (f.contains_ns("ns1") && f.contains("ns1", "str1"))
-        cout << f.read("ns1", "str1") << endl;
+    f.add_ns("namespace");
+    f.add_ns_str("namespace", "a", "value");
+
+    f.write_file("settings.cfg");
+
+    CFGPP_LOG("Reading string \"string\" 1000000 times is done.");
+    for (size_t i = 0; i < 10000000; i++)
+        f.read("string");
+
+    CFGPP_LOG("Reading string \"string\" in namespace \"namespace\" 1000000 "
+              "times is done.");
+    for (size_t i = 0; i < 1000000; i++)
+        f.read("namespace", "string");
 
     return 0;
 }
-```
-```cfg
-# settings.cfg
-
-str1 = "value1"
-
-[ns1]
-str1 = "value2"
 ```
 ```
 clang++ main.cpp cfgpp.cpp -std=c++23 -Wall -Werror

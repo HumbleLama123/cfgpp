@@ -1,16 +1,19 @@
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
-#include <vector>
 
 #include "cfgpp.hpp"
 
-inline struct cfg_file_data {
-    struct content {
-        std::vector<std::string> strs;
-        std::vector<std::pair<std::string, std::vector<std::string>>> ns;
-    } content;
-} cfg_file_data;
+inline std::string into_str_format(const std::string& str_name,
+                                   const std::string& str_value)
+{
+    return str_name + " = \"" + str_value + '"';
+}
+
+inline std::string into_namespace_format(const std::string& namespace_name)
+{
+    return '[' + namespace_name + ']';
+}
 
 inline std::string str_trim_whitespaces(std::string str)
 {
@@ -72,6 +75,8 @@ CFGPP::manipulator::manipulator(const std::string& cfg_file_path)
 void CFGPP::manipulator::open(const std::string& cfg_file_path)
 {
     if (std::filesystem::exists(cfg_file_path)) {
+        const_cast<std::string&>(this->cfg_file_path) = cfg_file_path;
+
         std::ifstream f(cfg_file_path);
 
         std::string line;
@@ -87,35 +92,38 @@ void CFGPP::manipulator::open(const std::string& cfg_file_path)
 
                 current_ns++;
 
-                cfg_file_data.content.ns.push_back(
-                    std::make_pair<std::string, std::vector<std::string>>(
-                        get_ns_name(line), std::vector<std::string>()));
+                content.ns.push_back(
+                    std::make_pair(get_ns_name(line), CFGPP_STRS_CONTENT()));
 
                 continue;
             }
 
             if (line_is_str(line) && !ns)
-                cfg_file_data.content.strs.push_back(line);
+                content.strs.push_back(
+                    std::make_pair(get_str_name(line), get_str_value(line)));
             else if (ns) {
                 if (line_is_str(line))
-                    cfg_file_data.content.ns[current_ns].second.push_back(line);
+                    content.ns[current_ns].second.push_back(std::make_pair(
+                        get_str_name(line), get_str_value(line)));
             }
         }
     } else {
-        // Error
+        CFGPP_LOG("[CFGPP][ERROR]: The specified file could not be found.");
+
+        exit(EXIT_FAILURE);
     }
 }
 
 void CFGPP::manipulator::close()
 {
-    cfg_file_data.content.strs.clear();
-    cfg_file_data.content.ns.clear();
+    content.strs.clear();
+    content.ns.clear();
 }
 
 bool CFGPP::manipulator::contains(const std::string& str_name)
 {
-    for (const auto& i : cfg_file_data.content.strs) {
-        if (get_str_name(i) == str_name)
+    for (const auto& i : content.strs) {
+        if (i.first == str_name)
             return true;
     }
 
@@ -125,10 +133,10 @@ bool CFGPP::manipulator::contains(const std::string& str_name)
 bool CFGPP::manipulator::contains(const std::string& ns_name,
                                   const std::string& str_name)
 {
-    for (const auto& i : cfg_file_data.content.ns) {
+    for (const auto& i : content.ns) {
         if (i.first == ns_name) {
             for (const auto& n : i.second) {
-                if (get_str_name(n) == str_name)
+                if (n.first == str_name)
                     return true;
             }
         }
@@ -139,7 +147,7 @@ bool CFGPP::manipulator::contains(const std::string& ns_name,
 
 bool CFGPP::manipulator::contains_ns(const std::string& ns_name)
 {
-    for (const auto& i : cfg_file_data.content.ns) {
+    for (const auto& i : content.ns) {
         if (i.first == ns_name)
             return true;
     }
@@ -151,9 +159,9 @@ std::string CFGPP::manipulator::read(const std::string& str_name)
 {
     std::string out;
 
-    for (const auto& i : cfg_file_data.content.strs) {
-        if (get_str_name(i) == str_name)
-            out = get_str_value(i);
+    for (const auto& i : content.strs) {
+        if (i.first == str_name)
+            out = i.second;
     }
 
     return out;
@@ -162,19 +170,82 @@ std::string CFGPP::manipulator::read(const std::string& str_name)
 std::string CFGPP::manipulator::read(const std::string& ns_name,
                                      const std::string& str_name)
 {
-    std::vector<std::string> out_ns;
+    CFGPP_STRS_CONTENT out_ns;
 
     std::string out_str;
 
-    for (const auto& i : cfg_file_data.content.ns) {
+    for (const auto& i : content.ns) {
         if (i.first == ns_name)
             out_ns = i.second;
     }
 
     for (const auto& i : out_ns) {
-        if (get_str_name(i) == str_name)
-            out_str = get_str_value(i);
+        if (i.first == str_name)
+            out_str = i.second;
     }
 
     return out_str;
+}
+
+void CFGPP::manipulator::add_str(const std::string& str_name,
+                                 const std::string& value)
+{
+    content.strs.push_back(std::make_pair(str_name, value));
+}
+
+void CFGPP::manipulator::add_ns(const std::string& ns_name)
+{
+    content.ns.push_back(std::make_pair(ns_name, CFGPP_STRS_CONTENT()));
+}
+
+void CFGPP::manipulator::add_ns_str(const std::string& ns_name,
+                                    const std::string& str_name,
+                                    const std::string& value)
+{
+    size_t current_ns_id = 0;
+
+    for (size_t i = 0; i < content.ns.size(); i++) {
+        if (content.ns[i].first == ns_name)
+            current_ns_id = i;
+    }
+
+    content.ns[current_ns_id].second.push_back(std::make_pair(str_name, value));
+}
+
+void CFGPP::manipulator::write_file(const std::string& cfg_file_path)
+{
+    if (std::filesystem::exists(cfg_file_path)) {
+        const_cast<std::string&>(this->cfg_file_path) = cfg_file_path;
+
+        std::ofstream f(cfg_file_path);
+
+        for (const auto& i : content.strs)
+            f << into_str_format(i.first, i.second) + '\n';
+
+        for (const auto& i : content.ns) {
+            f << '\n' + into_namespace_format(i.first) + '\n';
+
+            for (const auto& n : i.second)
+                f << into_str_format(n.first, n.second) + '\n';
+        }
+    } else {
+        CFGPP_LOG("[CFGPP][ERROR]: The specified file could not be found.");
+
+        exit(EXIT_FAILURE);
+    }
+}
+
+CFGPP_STRS_CONTENT& CFGPP::manipulator::get_str_vec()
+{
+    return content.strs;
+}
+
+CFGPP_NS_CONTENT& CFGPP::manipulator::get_ns_vec()
+{
+    return content.ns;
+}
+
+std::string CFGPP::manipulator::get_file_path()
+{
+    return cfg_file_path;
 }
